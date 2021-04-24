@@ -16,7 +16,6 @@ export class PokeApiHandler {
    * @returns {string} the url for the img of the pokemon based on the id given
    */
   public getPokeImg(id: number) {
-    console.log("Getting poke image");
 
     if (isNaN(id) || id < 0 || id > 893) {
       return "";
@@ -25,7 +24,21 @@ export class PokeApiHandler {
     console.log(this.API_URL_POKE_IMG);
 
     const pokemonImgUrl = `${this.API_URL_POKE_IMG}${id}.png`;
-    console.log(pokemonImgUrl);
     return pokemonImgUrl;
+  }
+
+  /**
+   * Get Pokemon information for the specified ID
+   * @param {number} id the integer that represents the pokemon's id from a range of 1-893
+   * @returns {Object} the object which represents pokemon's meta data
+   */
+
+  public async getPokemonMetaData(id: number) : Promise<unknown>{
+    if (isNaN(id) || id < 0 || id > 893) {
+        return "";
+    }
+
+    const result = await axios.get(`${this.API_URL_POKE}/pokemon/${id}`);
+    return result.data;
   }
 }

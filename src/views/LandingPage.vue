@@ -8,6 +8,11 @@
     <v-row>
       <v-col v-for="imgs in listOfImgsToDisplay" v-bind:key="imgs.id">
         <v-card>
+          <v-card-title id="test1">
+            <v-row id="test">
+              <div>#{{ imgs.pokemon.id }} {{ imgs.pokemon.name }}</div>
+            </v-row>
+          </v-card-title>
           <v-card-text>
             <v-row>
               <v-img
@@ -18,14 +23,16 @@
               >
               </v-img>
             </v-row>
-            <v-row id="test">
-              <div>1</div>
-            </v-row>
-            <v-row id="test">BULBA</v-row>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
+    <v-pagination
+      v-model="pageNumber"
+      :length="5"
+      circle
+      @input="test"
+    ></v-pagination>
   </v-container>
 </template>
 
@@ -39,33 +46,57 @@ const pokeApiHandler = new PokeApiHandler();
 @Component({ components: { Thumbnail } })
 export default class LandingPage extends Vue {
   searchFields = "";
-  listOfImgsToDisplay: { id: number; url: string }[] = [];
+  listOfImgsToDisplay: unknown = [];
 
-  startIndex = 1;
-  endIndex = 15;
+  pageNumber = 1;
+  pokemonPerPage = 15;
 
-  created(): void {
-    this.listOfImgsToDisplay = this.generateUrlForImgs(
-      this.startIndex,
-      this.endIndex
+  async test(): Promise<void> {
+    this.listOfImgsToDisplay = await this.generatePokemonCard(
+      this.startingIndex,
+      this.endingIndex
     );
 
     console.log(this.listOfImgsToDisplay);
   }
 
-  generateUrlForImgs(
+  async mounted(): Promise<void> {
+    this.listOfImgsToDisplay = await this.generatePokemonCard(
+      this.startingIndex,
+      this.endingIndex
+    );
+
+    console.log(this.listOfImgsToDisplay);
+  }
+
+  async generatePokemonCard(
     start: number,
     end: number
-  ): { id: number; url: string }[] {
+  ): Promise<{ id: number; url: string; pokemon: unknown }[]> {
     let arrayOfUrls = [];
 
     for (let i = start; i < end; i++) {
       const url = pokeApiHandler.getPokeImg(i);
-      const urlObj = { id: i, url: url };
+      const pokemonData = await pokeApiHandler.getPokemonMetaData(i);
+      const urlObj = { id: i, url: url, pokemon: pokemonData };
       arrayOfUrls.push(urlObj);
     }
 
     return arrayOfUrls;
+  }
+
+  async fetchData(): Promise<unknown> {
+    const result = await pokeApiHandler.getPokemonMetaData(1);
+    console.log(result);
+    return result;
+  }
+
+  get startingIndex(): number {
+    return 15 * (this.pageNumber - 1) + 1;
+  }
+
+  get endingIndex(): number {
+    return this.pageNumber * 15;
   }
 }
 </script>
@@ -81,5 +112,6 @@ export default class LandingPage extends Vue {
 
 #test {
   justify-content: center;
+  color: blue;
 }
 </style>
