@@ -35,7 +35,7 @@
       v-model="pageNumber"
       :length="5"
       circle
-      @input="test"
+      @input="paginate"
     ></v-pagination>
     <v-dialog v-model="pokemonModal">
       <pokemon-detail :pokemon="selectedPokemon"></pokemon-detail>
@@ -44,13 +44,16 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue, Watch } from "vue-property-decorator";
 import Thumbnail from "@/components/PokemonThumbnail.vue";
 import { PokeApiHandler } from "@/services/poke-api-handler";
 
 import PokemonDetail from "@/views/PokemonDetail.vue";
 
 const pokeApiHandler = new PokeApiHandler();
+
+const API_URL_POKE = process.env.VUE_APP_POKE;
+const API_URL_POKE_IMG = process.env.VUE_APP_POKE_IMG;
 
 @Component({ components: { Thumbnail, PokemonDetail } })
 export default class LandingPage extends Vue {
@@ -63,7 +66,25 @@ export default class LandingPage extends Vue {
   selectedPokemon: unknown = {};
   pokemonModal = false;
 
-  async test(): Promise<void> {
+  @Watch("searchFields")
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  async searchPokemon() {
+    let searchPokemon = await pokeApiHandler.search(this.searchFields);
+    let arrayOfImgUrl: any = [];
+    searchPokemon.forEach((obj: any) => {
+      const imgUrl = `${API_URL_POKE_IMG}/${obj.id}.png`;
+      const urlObj = { id: obj.id, url: imgUrl, pokemon: obj };
+      arrayOfImgUrl.push(urlObj);
+    });
+    console.log(this.listOfImgsToDisplay);
+    this.listOfImgsToDisplay = arrayOfImgUrl;
+  }
+
+  // get pokeData(): any {
+  //   return this.$store.getters.getPokeData;
+  // }
+
+  async paginate(): Promise<void> {
     this.listOfImgsToDisplay = await this.generatePokemonCard(
       this.startingIndex,
       this.endingIndex
@@ -77,7 +98,6 @@ export default class LandingPage extends Vue {
       this.startingIndex,
       this.endingIndex
     );
-
     console.log(this.listOfImgsToDisplay);
   }
 
@@ -89,7 +109,8 @@ export default class LandingPage extends Vue {
 
     for (let i = start; i < end; i++) {
       const url = pokeApiHandler.getPokeImg(i);
-      const pokemonData = await pokeApiHandler.getPokemonMetaData(i);
+      let newUrl = `${API_URL_POKE}/pokemon/${i}`;
+      const pokemonData = await pokeApiHandler.getPokemonMetaData(newUrl);
       const urlObj = { id: i, url: url, pokemon: pokemonData };
       arrayOfUrls.push(urlObj);
     }
@@ -97,20 +118,10 @@ export default class LandingPage extends Vue {
     return arrayOfUrls;
   }
 
-  async fetchData(): Promise<unknown> {
-    const result = await pokeApiHandler.getPokemonMetaData(1);
-    console.log(result);
-    return result;
-  }
-
-  showDetailPokemon(item: unknown) {
+  showDetailPokemon(item: unknown): void {
     this.selectedPokemon = item;
     this.pokemonModal = true;
     console.log(item);
-  }
-
-  searchPokemon() {
-    console.log("");
   }
 
   get startingIndex(): number {
