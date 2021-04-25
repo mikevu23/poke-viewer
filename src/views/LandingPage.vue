@@ -24,6 +24,7 @@
                 :src="imgs.url"
                 max-height="200"
                 max-width="200"
+                lazy-src="../assets/spinner.gif"
               >
               </v-img>
             </v-row>
@@ -32,9 +33,10 @@
       </v-col>
     </v-row>
     <v-pagination
-      v-model="pageNumber"
-      :length="5"
+      v-model="currentPage"
+      :length="pageNumbers"
       circle
+      total-visible="10"
       @input="paginate"
     ></v-pagination>
     <v-dialog v-model="pokemonModal">
@@ -58,10 +60,12 @@ const API_URL_POKE_IMG = process.env.VUE_APP_POKE_IMG;
 @Component({ components: { Thumbnail, PokemonDetail } })
 export default class LandingPage extends Vue {
   searchFields = "";
-  listOfImgsToDisplay: unknown = [];
+  listOfImgsToDisplay: any = [];
 
-  pageNumber = 1;
+  currentPage = 1;
   pokemonPerPage = 15;
+
+  numberOfPokemonInTotalCurrently = 893;
 
   selectedPokemon: unknown = {};
   pokemonModal = false;
@@ -78,6 +82,11 @@ export default class LandingPage extends Vue {
     });
     console.log(this.listOfImgsToDisplay);
     this.listOfImgsToDisplay = arrayOfImgUrl;
+    this.numberOfPokemonInTotalCurrently = this.listOfImgsToDisplay.length;
+
+    if (this.searchFields == "") {
+      this.numberOfPokemonInTotalCurrently = 893;
+    }
   }
 
   // get pokeData(): any {
@@ -124,12 +133,18 @@ export default class LandingPage extends Vue {
     console.log(item);
   }
 
+  get pageNumbers(): number {
+    let numberOfPokemons = Math.ceil(this.numberOfPokemonInTotalCurrently / 15);
+    console.log(numberOfPokemons);
+    return numberOfPokemons;
+  }
+
   get startingIndex(): number {
-    return 15 * (this.pageNumber - 1) + 1;
+    return 15 * (this.currentPage - 1) + 1;
   }
 
   get endingIndex(): number {
-    return this.pageNumber * 15;
+    return this.currentPage * 15;
   }
 }
 </script>

@@ -110,8 +110,8 @@ async search(name: string){
   }
 
   const searchDB = await response?.json();
-  let arrayofURL = searchDB.results.filter((pokemon: any) => pokemon.name.match(name));
-  arrayofURL = arrayofURL.slice(0, 14);
+  const arrayofURL = searchDB.results.filter((pokemon: any) => pokemon.name.match(name));
+  // arrayofURL = arrayofURL.slice(0, 14);
   
   let pokemons: any = [];
   const promises = [];
