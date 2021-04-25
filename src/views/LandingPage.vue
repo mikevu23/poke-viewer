@@ -24,8 +24,19 @@
                 :src="imgs.url"
                 max-height="200"
                 max-width="200"
-                lazy-src="../assets/spinner.gif"
-              >
+                lazy-src="../assets/whitebg.png"
+                ><template v-slot:placeholder>
+                  <v-row
+                    class="fill-height ma-0"
+                    align="center"
+                    justify="center"
+                  >
+                    <v-progress-circular
+                      indeterminate
+                      color="blue lighten-5"
+                    ></v-progress-circular>
+                  </v-row>
+                </template>
               </v-img>
             </v-row>
           </v-card-text>
