@@ -5,23 +5,20 @@
  */
 
 import axios from "axios";
-
 export class PokeApiHandler {
   API_URL_POKE = process.env.VUE_APP_POKE;
   API_URL_POKE_IMG = process.env.VUE_APP_POKE_IMG;
 
-  /**
-   * Get the pokemon image
-   * @param {number} id the integer that represents the pokemon's id from a range of 1-893
-   * @returns {string} the url for the img of the pokemon based on the id given
-   */
+/**
+ * Get the pokemon image
+ * @param {number} id the integer that represents the pokemon's id from a range of 1-893
+ * @returns {string} the url for the img of the pokemon based on the id given
+ */
   public getPokeImg(id: number) {
 
     if (isNaN(id) || id < 0 || id > 893) {
       return "";
     }
-
-    console.log(this.API_URL_POKE_IMG);
 
     const pokemonImgUrl = `${this.API_URL_POKE_IMG}${id}.png`;
     return pokemonImgUrl;
@@ -34,11 +31,31 @@ export class PokeApiHandler {
    */
 
   public async getPokemonMetaData(id: number) : Promise<unknown>{
+
     if (isNaN(id) || id < 0 || id > 893) {
         return "";
     }
 
-    const result = await axios.get(`${this.API_URL_POKE}/pokemon/${id}`);
-    return result.data;
+    let data = localStorage.getItem(`${this.API_URL_POKE}/pokemon/${id}/`);
+    console.log("test");
+
+    if (!data){
+        try{
+            const result = await axios.get(`${this.API_URL_POKE}/pokemon/${id}/`);
+            data = result.data;
+            console.log(data);
+            localStorage.setItem('poke', result.data);
+            return data;
+        }
+
+        catch(e){
+            console.error(e);
+            return {};
+        }
+
+    }
+
+    return data;
   }
+  
 }

@@ -2,19 +2,23 @@
   <v-container class="landingPage">
     <v-row>
       <v-col id="searchBar">
-        <v-text-field v-model="searchFields"></v-text-field>
+        <v-text-field
+          v-model="searchFields"
+          label="Find a pokemon"
+          hint="Enter a pokemon name or a id"
+        ></v-text-field>
       </v-col>
     </v-row>
     <v-row>
       <v-col v-for="imgs in listOfImgsToDisplay" v-bind:key="imgs.id">
-        <v-card>
-          <v-card-title id="test1">
-            <v-row id="test">
+        <v-card @click="showDetailPokemon(imgs)">
+          <v-card-title>
+            <v-row>
               <div>#{{ imgs.pokemon.id }} {{ imgs.pokemon.name }}</div>
             </v-row>
           </v-card-title>
           <v-card-text>
-            <v-row>
+            <v-row class="pokemonImage">
               <v-img
                 v-bind:key="imgs.id"
                 :src="imgs.url"
@@ -33,6 +37,9 @@
       circle
       @input="test"
     ></v-pagination>
+    <v-dialog v-model="pokemonModal">
+      <pokemon-detail :pokemon="selectedPokemon"></pokemon-detail>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -41,15 +48,20 @@ import { Component, Vue } from "vue-property-decorator";
 import Thumbnail from "@/components/PokemonThumbnail.vue";
 import { PokeApiHandler } from "@/services/poke-api-handler";
 
+import PokemonDetail from "@/views/PokemonDetail.vue";
+
 const pokeApiHandler = new PokeApiHandler();
 
-@Component({ components: { Thumbnail } })
+@Component({ components: { Thumbnail, PokemonDetail } })
 export default class LandingPage extends Vue {
   searchFields = "";
   listOfImgsToDisplay: unknown = [];
 
   pageNumber = 1;
   pokemonPerPage = 15;
+
+  selectedPokemon: unknown = {};
+  pokemonModal = false;
 
   async test(): Promise<void> {
     this.listOfImgsToDisplay = await this.generatePokemonCard(
@@ -91,6 +103,16 @@ export default class LandingPage extends Vue {
     return result;
   }
 
+  showDetailPokemon(item: unknown) {
+    this.selectedPokemon = item;
+    this.pokemonModal = true;
+    console.log(item);
+  }
+
+  searchPokemon() {
+    console.log("");
+  }
+
   get startingIndex(): number {
     return 15 * (this.pageNumber - 1) + 1;
   }
@@ -113,5 +135,10 @@ export default class LandingPage extends Vue {
 #test {
   justify-content: center;
   color: blue;
+}
+
+.pokemonImage {
+  display: flex;
+  justify-content: center;
 }
 </style>
