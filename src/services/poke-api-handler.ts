@@ -44,7 +44,7 @@ export class PokeApiHandler {
             const result = await axios.get(`${this.API_URL_POKE}/pokemon/${id}/`);
             data = result.data;
             console.log(data);
-            localStorage.setItem('poke', result.data);
+            localStorage.setItem(`${this.API_URL_POKE}/pokemon/${id}/`, result.data);
             return data;
         }
 
@@ -57,5 +57,7 @@ export class PokeApiHandler {
 
     return data;
   }
+
+  public async
   
 }
