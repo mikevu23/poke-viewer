@@ -11,7 +11,7 @@
     </v-row>
     <v-row>
       <v-col v-for="imgs in listOfImgsToDisplay" v-bind:key="imgs.id">
-        <v-card @click="showDetailPokemon(imgs)">
+        <v-card class="pokemonCard" @click="showDetailPokemon(imgs)">
           <v-card-title>
             <v-row>
               <div>#{{ imgs.pokemon.id }} {{ imgs.pokemon.name }}</div>
@@ -151,5 +151,9 @@ export default class LandingPage extends Vue {
 .pokemonImage {
   display: flex;
   justify-content: center;
+}
+
+.pokemonCard {
+  max-width: 256px;
 }
 </style>
