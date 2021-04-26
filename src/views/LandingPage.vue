@@ -177,31 +177,10 @@ export default class LandingPage extends Vue {
   async searchPokemon(searchText: string): Promise<void> {
     this.displaySpinner();
     let searchedPokemon = await pokeApiHandler.search(searchText);
-    let arrayOfImgUrl: Pokemon[] = [];
 
-    searchedPokemon.forEach((obj: Pokemon) => {
-      const imgUrl = `${API_URL_POKE_IMG}${obj.id}.png`;
-      try {
-        obj.imgUrl = imgUrl;
-      } catch (error) {
-        console.error(error);
-        obj = {
-          id: this.emptyPokemonRequest--,
-          imgUrl: "",
-          url: "",
-          name: "",
-          types: [],
-          stats: [],
-          abilities: [],
-        };
-      }
-
-      arrayOfImgUrl.push(obj);
-    });
-
-    this.searchBatch = arrayOfImgUrl;
-    this.numberOfPokemonInTotalCurrently = arrayOfImgUrl.length;
-    this.pokemonsToDisplay = arrayOfImgUrl.slice(0, POKEMON_PER_PAGE - 1);
+    this.searchBatch = searchedPokemon;
+    this.numberOfPokemonInTotalCurrently = searchedPokemon.length;
+    this.pokemonsToDisplay = searchedPokemon.slice(0, POKEMON_PER_PAGE - 1);
 
     this.switchSearch(searchText);
     this.hideSpinner();
@@ -243,28 +222,14 @@ export default class LandingPage extends Vue {
    */
   async generatePokemonCards(start: number, end: number): Promise<Pokemon[]> {
     let pokemons = [];
-
+    let pokemonArrayToProcess = [];
     for (let i = start; i < end; i++) {
-      const url = pokeApiHandler.getPokeImg(i);
-      let newUrl = `${API_URL_POKE}/pokemon/${i}`;
-      let pokemonData = await pokeApiHandler.getPokemonMetaData(newUrl);
-      try {
-        pokemonData.imgUrl = url;
-      } catch (error) {
-        console.error(error);
-        pokemonData = {
-          id: this.emptyPokemonRequest--,
-          imgUrl: "",
-          url: "",
-          name: "",
-          types: [],
-          stats: [],
-          abilities: [],
-        };
-      }
-
-      pokemons.push(pokemonData);
+      let pokemonData = pokeApiHandler.getPokemonMetaData(i);
+      pokemonArrayToProcess.push(pokemonData);
     }
+
+    pokemons = await Promise.all(pokemonArrayToProcess);
+    console.log(pokemons);
 
     return pokemons;
   }

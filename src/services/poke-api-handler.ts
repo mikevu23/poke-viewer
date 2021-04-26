@@ -35,7 +35,8 @@ export class PokeApiHandler {
    * @returns {Object} the object which represents pokemon's meta data
    */
 
-  public async getPokemonMetaData(url: string): Promise<Pokemon> {
+  public async getPokemonMetaData(id: number): Promise<Pokemon> {
+    const url = `${this.API_URL_POKE}/pokemon/${id}`
     const pokeCache = await caches.open("poke");
     let response = await pokeCache.match(url);
 
@@ -63,7 +64,7 @@ export class PokeApiHandler {
     };
 
     Object.assign(pokemon, response);
-
+    pokemon.imgUrl = this.getPokeImg(pokemon.id);
     return pokemon;
   }
 
@@ -127,7 +128,10 @@ export class PokeApiHandler {
     const promises = [];
 
     for (const obj of arrayofURL) {
-      promises.push(this.getPokemonMetaData(obj.url));
+      const urlTokenized = obj.url.split("/");
+      const id = urlTokenized[6];
+      console.log(id);
+      promises.push(this.getPokemonMetaData(id));
     }
 
     pokemons = await Promise.all(promises);

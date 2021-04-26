@@ -27,7 +27,7 @@ tldr regarding the solution to solve cors:
 
 # Future improvements or add-ons
 - Include more details on Pokemon detail page
-- Improve performance on querying for Pokemon and pagination
+- ~~Improve performance on querying for Pokemon and pagination~~ -> fixed by including promise.all when I query pokemon data
 
 ## Project setup
 ```
