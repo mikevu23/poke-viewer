@@ -11,10 +11,11 @@ Vue.js, Vuetify, Typescript and Cache API.
 
 This application utilizes PokeApi and Pokeres.bastionbot.org for Pokemon information and Pokemon Images.
 
-As of right now, Cache API is used on this application to cache queries to improve user experience. 
-Thus a HTTPS is required to use this application as Cache api depends on it.
-
+The application as of right now sometimes takes long to render the information pulled from the API.
+Some performance improvements were added to ensure a smooth experience. 
 In terms of searching, it has a debounce time set to 600ms and only accepts Pokemon names as of right now.
+The Cache API is used on this application to cache queries to improve user experience by enabling faster load times as the application is used. 
+**However a HTTPS is required to use this application as Cache api depends on it.**
 
 This application encounters cors issues with PokeAPI. A solution was to send the request through a cors proxy. More information on how to resolve the cors issue through here https://stackoverflow.com/questions/43262121/trying-to-use-fetch-and-pass-in-mode-no-cors.
 
