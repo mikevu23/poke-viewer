@@ -7,24 +7,22 @@
           label="Find a pokemon"
           hint="Enter a pokemon name to search for"
           @input="displaySearchPokemon(searchText)"
-          v-on:next="nextPage"
-          v-on:previous="prevPage"
         ></v-text-field>
       </v-col>
     </v-row>
     <v-row>
-      <v-col v-for="imgs in listOfImgsToDisplay" v-bind:key="imgs.id">
-        <v-card class="pokemonCard" @click="showDetailPokemon(imgs)">
+      <v-col v-for="pokemon in pokemonsToDisplay" v-bind:key="pokemon.id">
+        <v-card class="pokemonCard" @click="showDetailPokemon(pokemon)">
           <v-card-title>
             <v-row>
-              <div>#{{ imgs.pokemon.id }} {{ imgs.pokemon.name }}</div>
+              <div>#{{ pokemon.id }} {{ pokemon.name }}</div>
             </v-row>
           </v-card-title>
           <v-card-text>
             <v-row class="pokemonImage">
               <v-img
-                v-bind:key="imgs.id"
-                :src="imgs.url"
+                v-bind:key="pokemon.id"
+                :src="pokemon.imgUrl"
                 max-height="200"
                 max-width="200"
                 lazy-src="../assets/whitebg.png"
@@ -51,41 +49,40 @@
       :length="pageNumbers"
       circle
       total-visible="10"
-      @input="paginate"
-      @next="paginate"
+      @input="changePage"
+      @next="changePage"
     ></v-pagination>
-    <v-dialog v-model="pokemonModal">
+    <v-dialog v-model="pokemonModal" @click:outside="closeModal">
       <pokemon-detail :pokemon="selectedPokemon"></pokemon-detail>
     </v-dialog>
   </v-container>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import Thumbnail from "@/components/PokemonThumbnail.vue";
-import { PokeApiHandler } from "@/services/poke-api-handler";
 import _ from "lodash";
-
+import { Component, Vue } from "vue-property-decorator";
+import { PokeApiHandler } from "@/services/poke-api-handler";
 import PokemonDetail from "@/views/PokemonDetail.vue";
-import { TOTAL_NUMBER_OF_POKEMON, DEBOUNCE_TIMEOUT } from "@/helper/constants";
+import { Pokemon } from "@/types/Pokemon";
+import {
+  TOTAL_NUMBER_OF_POKEMON,
+  DEBOUNCE_TIMEOUT,
+  POKEMON_PER_PAGE,
+} from "@/helper/constants";
 
 const pokeApiHandler = new PokeApiHandler();
 
 const API_URL_POKE = process.env.VUE_APP_POKE;
 const API_URL_POKE_IMG = process.env.VUE_APP_POKE_IMG;
 
-@Component({ components: { Thumbnail, PokemonDetail } })
+@Component({ components: { PokemonDetail } })
 export default class LandingPage extends Vue {
   searchText = "";
-  listOfImgsToDisplay: any = [];
-
+  pokemonsToDisplay: Pokemon[] = [];
   currentPage = 1;
-  pokemonPerPage = 15;
-
-  TOTAL_NUMBER = 893;
   numberOfPokemonInTotalCurrently = TOTAL_NUMBER_OF_POKEMON;
   isUsingSearchPagination = false;
-  searchBatch: any = [];
+  searchBatch: Pokemon[] = [];
 
   selectedPokemon: unknown = {};
   pokemonModal = false;
@@ -96,6 +93,41 @@ export default class LandingPage extends Vue {
   displaySearchPokemon = _.debounce(this.searchPokemon, DEBOUNCE_TIMEOUT);
 
   /**
+   * Close the modal and reset the data
+   */
+  closeModal(): void {
+    this.selectedPokemon = {};
+    this.pokemonModal = false;
+  }
+
+  /**
+   * Load the details page for the Pokemon selected
+   * @returns void
+   */
+  showDetailPokemon(item: Pokemon): void {
+    console.log(item);
+    this.selectedPokemon = item;
+    this.pokemonModal = true;
+    console.log(item);
+  }
+
+  /**
+   * Adjusts the pagination to use the search batch or normal
+   * based on the search text provided
+   * @param searchText a string that represents text used to search for pokemon
+   */
+  switchSearch(searchText: string): void {
+    // Adjust pagination to search items
+    this.isUsingSearchPagination = true;
+
+    if (searchText == "") {
+      this.numberOfPokemonInTotalCurrently = TOTAL_NUMBER_OF_POKEMON;
+      this.isUsingSearchPagination = false;
+      this.currentPage = 1;
+    }
+  }
+
+  /**
    * Get the list of Pokemons that match with the searchField
    * @param searchField a string to search pokemon with
    * @returns a void promise
@@ -103,41 +135,33 @@ export default class LandingPage extends Vue {
   async searchPokemon(searchText: string): Promise<void> {
     console.log(searchText);
     let searchedPokemon = await pokeApiHandler.search(searchText);
-    let arrayOfImgUrl: any = [];
+    let arrayOfImgUrl: Pokemon[] = [];
 
-    searchedPokemon.forEach((obj: any) => {
+    searchedPokemon.forEach((obj: Pokemon) => {
       const imgUrl = `${API_URL_POKE_IMG}${obj.id}.png`;
-      const urlObj = { id: obj.id, url: imgUrl, pokemon: obj };
-      arrayOfImgUrl.push(urlObj);
+      obj.imgUrl = imgUrl;
+      // const urlObj = { id: obj.id, url: imgUrl, pokemon: obj };
+      arrayOfImgUrl.push(obj);
     });
 
     this.searchBatch = arrayOfImgUrl;
     this.numberOfPokemonInTotalCurrently = arrayOfImgUrl.length;
-    this.listOfImgsToDisplay = arrayOfImgUrl.slice(0, this.pokemonPerPage - 1);
+    this.pokemonsToDisplay = arrayOfImgUrl.slice(0, POKEMON_PER_PAGE - 1);
 
-    // Adjust pagination to search items
-    this.isUsingSearchPagination = true;
-
-    if (searchText == "") {
-      this.numberOfPokemonInTotalCurrently = TOTAL_NUMBER_OF_POKEMON;
-      this.isUsingSearchPagination = false;
-    }
+    this.switchSearch(searchText);
   }
 
-  nextPage() {
-    console.log("next");
-  }
-
-  prevPage() {
-    console.log("prev");
-  }
-
-  async paginate(): Promise<void> {
-    console.log("test");
+  /**
+   * Change of the page of the pokemon view
+   */
+  async changePage(): Promise<void> {
     if (this.isUsingSearchPagination) {
-      this.listOfImgsToDisplay = this.searchBatch;
+      this.pokemonsToDisplay = this.searchBatch.slice(
+        this.startingIndex,
+        this.endingIndex
+      );
     } else {
-      this.listOfImgsToDisplay = await this.generatePokemonCards(
+      this.pokemonsToDisplay = await this.generatePokemonCards(
         this.startingIndex,
         this.endingIndex
       );
@@ -145,7 +169,7 @@ export default class LandingPage extends Vue {
   }
 
   async mounted(): Promise<void> {
-    this.listOfImgsToDisplay = await this.generatePokemonCards(
+    this.pokemonsToDisplay = await this.generatePokemonCards(
       this.startingIndex,
       this.endingIndex
     );
@@ -157,40 +181,29 @@ export default class LandingPage extends Vue {
    * @param end the last pokemon id
    * @returns a Promise of an object that contains the id, url and pokemon object of the pokemon
    */
-  async generatePokemonCards(
-    start: number,
-    end: number
-  ): Promise<{ id: number; url: string; pokemon: unknown }[]> {
-    let arrayOfUrls = [];
+  async generatePokemonCards(start: number, end: number): Promise<Pokemon[]> {
+    let pokemons = [];
 
     for (let i = start; i < end; i++) {
       const url = pokeApiHandler.getPokeImg(i);
       let newUrl = `${API_URL_POKE}/pokemon/${i}`;
       const pokemonData = await pokeApiHandler.getPokemonMetaData(newUrl);
-      const urlObj = { id: i, url: url, pokemon: pokemonData };
-      arrayOfUrls.push(urlObj);
+      // const urlObj = { id: i, url: url, pokemon: pokemonData };
+      pokemonData.imgUrl = url;
+      pokemons.push(pokemonData);
     }
 
-    return arrayOfUrls;
-  }
-
-  /**
-   * Load the details page for the Pokemon selected
-   * @returns void
-   */
-  showDetailPokemon(item: unknown): void {
-    console.log(item);
-    this.selectedPokemon = item;
-    this.pokemonModal = true;
-    console.log(item);
+    return pokemons;
   }
 
   /**
    * Calculate the number of pages needed for pagination for the list of pokemons
-   * @returns a number that represents the total number of pages to paginate the list of pokemons
+   * @returns a number that represents the total number of pages to changePage the list of pokemons
    */
   get pageNumbers(): number {
-    let numberOfPokemons = Math.ceil(this.numberOfPokemonInTotalCurrently / 15);
+    let numberOfPokemons = Math.floor(
+      this.numberOfPokemonInTotalCurrently / POKEMON_PER_PAGE
+    );
     return numberOfPokemons;
   }
 
@@ -198,7 +211,7 @@ export default class LandingPage extends Vue {
    * Compute the starting index of the list of Pokemons for pagination
    */
   get startingIndex(): number {
-    return this.pokemonPerPage * (this.currentPage - 1) + 1;
+    return POKEMON_PER_PAGE * (this.currentPage - 1) + 1;
   }
 
   /**
@@ -206,7 +219,7 @@ export default class LandingPage extends Vue {
    * @returns the index of the last pokemon
    */
   get endingIndex(): number {
-    return this.currentPage * this.pokemonPerPage;
+    return this.currentPage * POKEMON_PER_PAGE;
   }
 }
 </script>

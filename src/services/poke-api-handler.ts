@@ -4,7 +4,8 @@
  * Handles calling and caching API from POKE APIs
  */
 
-import {RETRIEVAL_AMOUNT_FOR_SEARCH} from "@/helper/constants"
+import {POKEMON_PER_PAGE, RETRIEVAL_AMOUNT_FOR_SEARCH} from "@/helper/constants"
+import { Pokemon } from "@/types/Pokemon";
 
 export class PokeApiHandler {
   API_URL_POKE = process.env.VUE_APP_POKE;
@@ -31,7 +32,7 @@ export class PokeApiHandler {
    * @returns {Object} the object which represents pokemon's meta data
    */
 
-  public async getPokemonMetaData(url: string) : Promise<unknown>{
+  public async getPokemonMetaData(url: string) : Promise<Pokemon>{
 
     // let parsedData = [];
     // let data = localStorage.getItem(`pokeDB2`);
@@ -46,7 +47,18 @@ export class PokeApiHandler {
     response = await pokeCache.match(url);
     response = await response?.json();
 
-    return response;
+    const pokemon: Pokemon = {
+      id: 0,
+      imgUrl: "",
+      url: "",
+      name: "",
+      types: [],
+      stats: [],
+      abilities: []
+    };
+    Object.assign(pokemon, response);
+
+    return pokemon;
 
 
 
@@ -81,7 +93,7 @@ export class PokeApiHandler {
 }
 
 
-async initCache(){
+async initCache(): Promise<void>{
   // const data = localStorage.getItem('pokeDB2');
   // const pokemons = [];
   // if (!data){
@@ -104,7 +116,7 @@ async initCache(){
     }
 }
 
-async search(name: string){
+async search(name: string): Promise<Pokemon[]>{
   const cachePoke = await caches.open('pokeSearch');
   const response = await cachePoke.match(`${this.API_URL_POKE}pokemon?limit=893`);
   if (response === undefined){
