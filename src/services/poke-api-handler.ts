@@ -130,7 +130,6 @@ export class PokeApiHandler {
     for (const obj of arrayofURL) {
       const urlTokenized = obj.url.split("/");
       const id = urlTokenized[6];
-      console.log(id);
       promises.push(this.getPokemonMetaData(id));
     }
 
