@@ -10,9 +10,13 @@
         ></v-text-field>
       </v-col>
     </v-row>
-    <v-row>
+    <v-row class="rowContent" v-if="!loading">
       <v-col v-for="pokemon in pokemonsToDisplay" v-bind:key="pokemon.id">
-        <v-card class="pokemonCard" @click="showDetailPokemon(pokemon)">
+        <v-card
+          v-if="pokemon.id > 0"
+          class="pokemonCard"
+          @click="showDetailPokemon(pokemon)"
+        >
           <v-card-title>
             <v-row>
               <div>#{{ pokemon.id }} {{ pokemon.name }}</div>
@@ -44,7 +48,15 @@
         </v-card>
       </v-col>
     </v-row>
+    <div v-if="loading" class="spinner">
+      <v-progress-circular
+        indeterminate
+        color="blue"
+        size="69"
+      ></v-progress-circular>
+    </div>
     <v-pagination
+      class="pagination"
       v-model="currentPage"
       :length="pageNumbers"
       circle
@@ -83,9 +95,33 @@ export default class LandingPage extends Vue {
   numberOfPokemonInTotalCurrently = TOTAL_NUMBER_OF_POKEMON;
   isUsingSearchPagination = false;
   searchBatch: Pokemon[] = [];
+  loading = false;
+  emptyPokemonRequest = -1;
 
-  selectedPokemon: unknown = {};
+  selectedPokemon: Pokemon = {
+    id: -1,
+    imgUrl: "",
+    url: "",
+    name: "",
+    types: [],
+    stats: [],
+    abilities: [],
+  };
   pokemonModal = false;
+
+  /**
+   * Displays spinner when running async functions
+   */
+  displaySpinner(): void {
+    this.loading = true;
+  }
+
+  /**
+   * Hides spinner after running async functions
+   */
+  hideSpinner(): void {
+    this.loading = false;
+  }
 
   /**
    * Display the searched pokemon
@@ -96,7 +132,15 @@ export default class LandingPage extends Vue {
    * Close the modal and reset the data
    */
   closeModal(): void {
-    this.selectedPokemon = {};
+    this.selectedPokemon = {
+      id: 0,
+      imgUrl: "",
+      url: "",
+      name: "",
+      types: [],
+      stats: [],
+      abilities: [],
+    };
     this.pokemonModal = false;
   }
 
@@ -105,10 +149,8 @@ export default class LandingPage extends Vue {
    * @returns void
    */
   showDetailPokemon(item: Pokemon): void {
-    console.log(item);
     this.selectedPokemon = item;
     this.pokemonModal = true;
-    console.log(item);
   }
 
   /**
@@ -133,14 +175,27 @@ export default class LandingPage extends Vue {
    * @returns a void promise
    */
   async searchPokemon(searchText: string): Promise<void> {
-    console.log(searchText);
+    this.displaySpinner();
     let searchedPokemon = await pokeApiHandler.search(searchText);
     let arrayOfImgUrl: Pokemon[] = [];
 
     searchedPokemon.forEach((obj: Pokemon) => {
       const imgUrl = `${API_URL_POKE_IMG}${obj.id}.png`;
-      obj.imgUrl = imgUrl;
-      // const urlObj = { id: obj.id, url: imgUrl, pokemon: obj };
+      try {
+        obj.imgUrl = imgUrl;
+      } catch (error) {
+        console.error(error);
+        obj = {
+          id: this.emptyPokemonRequest--,
+          imgUrl: "",
+          url: "",
+          name: "",
+          types: [],
+          stats: [],
+          abilities: [],
+        };
+      }
+
       arrayOfImgUrl.push(obj);
     });
 
@@ -149,12 +204,14 @@ export default class LandingPage extends Vue {
     this.pokemonsToDisplay = arrayOfImgUrl.slice(0, POKEMON_PER_PAGE - 1);
 
     this.switchSearch(searchText);
+    this.hideSpinner();
   }
 
   /**
    * Change of the page of the pokemon view
    */
   async changePage(): Promise<void> {
+    this.displaySpinner();
     if (this.isUsingSearchPagination) {
       this.pokemonsToDisplay = this.searchBatch.slice(
         this.startingIndex,
@@ -166,13 +223,16 @@ export default class LandingPage extends Vue {
         this.endingIndex
       );
     }
+    this.hideSpinner();
   }
 
   async mounted(): Promise<void> {
+    this.displaySpinner();
     this.pokemonsToDisplay = await this.generatePokemonCards(
       this.startingIndex,
       this.endingIndex
     );
+    this.hideSpinner();
   }
 
   /**
@@ -187,9 +247,22 @@ export default class LandingPage extends Vue {
     for (let i = start; i < end; i++) {
       const url = pokeApiHandler.getPokeImg(i);
       let newUrl = `${API_URL_POKE}/pokemon/${i}`;
-      const pokemonData = await pokeApiHandler.getPokemonMetaData(newUrl);
-      // const urlObj = { id: i, url: url, pokemon: pokemonData };
-      pokemonData.imgUrl = url;
+      let pokemonData = await pokeApiHandler.getPokemonMetaData(newUrl);
+      try {
+        pokemonData.imgUrl = url;
+      } catch (error) {
+        console.error(error);
+        pokemonData = {
+          id: this.emptyPokemonRequest--,
+          imgUrl: "",
+          url: "",
+          name: "",
+          types: [],
+          stats: [],
+          abilities: [],
+        };
+      }
+
       pokemons.push(pokemonData);
     }
 
@@ -246,5 +319,15 @@ export default class LandingPage extends Vue {
 .pokemonCard {
   max-width: 300px;
   margin: auto;
+}
+
+.spinner {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pagination {
+  padding: 10px;
 }
 </style>

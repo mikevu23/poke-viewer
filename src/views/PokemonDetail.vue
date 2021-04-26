@@ -30,10 +30,6 @@ import { Component, Vue, Prop } from "vue-property-decorator";
 @Component({})
 export default class PokemonDetail extends Vue {
   @Prop() pokemon: unknown;
-
-  created() {
-    console.log(this.pokemon);
-  }
 }
 </script>
 
