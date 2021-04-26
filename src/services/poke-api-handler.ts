@@ -91,6 +91,16 @@ export class PokeApiHandler {
    * @returns a promise of an array of pokemons
    */
   async search(name: string): Promise<Pokemon[]> {
+
+    try{
+      name = name.toLowerCase();
+    }
+
+    catch(error){
+      console.error(error);
+      name = "";
+    }
+
     const cachePoke = await caches.open("pokeSearch");
     let response = await cachePoke.match(
       `${this.API_URL_POKE}pokemon?limit=893`
