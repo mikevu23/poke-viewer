@@ -3,9 +3,12 @@
     <v-row>
       <v-col id="searchBar">
         <v-text-field
-          v-model="searchFields"
+          v-model="searchText"
           label="Find a pokemon"
-          hint="Enter a pokemon name or a id"
+          hint="Enter a pokemon name to search for"
+          @input="displaySearchPokemon(searchText)"
+          v-on:next="nextPage"
+          v-on:previous="prevPage"
         ></v-text-field>
       </v-col>
     </v-row>
@@ -49,6 +52,7 @@
       circle
       total-visible="10"
       @input="paginate"
+      @next="paginate"
     ></v-pagination>
     <v-dialog v-model="pokemonModal">
       <pokemon-detail :pokemon="selectedPokemon"></pokemon-detail>
@@ -57,11 +61,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from "vue-property-decorator";
+import { Component, Vue } from "vue-property-decorator";
 import Thumbnail from "@/components/PokemonThumbnail.vue";
 import { PokeApiHandler } from "@/services/poke-api-handler";
+import _ from "lodash";
 
 import PokemonDetail from "@/views/PokemonDetail.vue";
+import { TOTAL_NUMBER_OF_POKEMON, DEBOUNCE_TIMEOUT } from "@/helper/constants";
 
 const pokeApiHandler = new PokeApiHandler();
 
@@ -70,58 +76,88 @@ const API_URL_POKE_IMG = process.env.VUE_APP_POKE_IMG;
 
 @Component({ components: { Thumbnail, PokemonDetail } })
 export default class LandingPage extends Vue {
-  searchFields = "";
+  searchText = "";
   listOfImgsToDisplay: any = [];
 
   currentPage = 1;
   pokemonPerPage = 15;
 
-  numberOfPokemonInTotalCurrently = 893;
+  TOTAL_NUMBER = 893;
+  numberOfPokemonInTotalCurrently = TOTAL_NUMBER_OF_POKEMON;
+  isUsingSearchPagination = false;
+  searchBatch: any = [];
 
   selectedPokemon: unknown = {};
   pokemonModal = false;
 
-  @Watch("searchFields")
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async searchPokemon() {
-    let searchPokemon = await pokeApiHandler.search(this.searchFields);
+  /**
+   * Display the searched pokemon
+   */
+  displaySearchPokemon = _.debounce(this.searchPokemon, DEBOUNCE_TIMEOUT);
+
+  /**
+   * Get the list of Pokemons that match with the searchField
+   * @param searchField a string to search pokemon with
+   * @returns a void promise
+   */
+  async searchPokemon(searchText: string): Promise<void> {
+    console.log(searchText);
+    let searchedPokemon = await pokeApiHandler.search(searchText);
     let arrayOfImgUrl: any = [];
-    searchPokemon.forEach((obj: any) => {
-      const imgUrl = `${API_URL_POKE_IMG}/${obj.id}.png`;
+
+    searchedPokemon.forEach((obj: any) => {
+      const imgUrl = `${API_URL_POKE_IMG}${obj.id}.png`;
       const urlObj = { id: obj.id, url: imgUrl, pokemon: obj };
       arrayOfImgUrl.push(urlObj);
     });
-    console.log(this.listOfImgsToDisplay);
-    this.listOfImgsToDisplay = arrayOfImgUrl;
-    this.numberOfPokemonInTotalCurrently = this.listOfImgsToDisplay.length;
 
-    if (this.searchFields == "") {
-      this.numberOfPokemonInTotalCurrently = 893;
+    this.searchBatch = arrayOfImgUrl;
+    this.numberOfPokemonInTotalCurrently = arrayOfImgUrl.length;
+    this.listOfImgsToDisplay = arrayOfImgUrl.slice(0, this.pokemonPerPage - 1);
+
+    // Adjust pagination to search items
+    this.isUsingSearchPagination = true;
+
+    if (searchText == "") {
+      this.numberOfPokemonInTotalCurrently = TOTAL_NUMBER_OF_POKEMON;
+      this.isUsingSearchPagination = false;
     }
   }
 
-  // get pokeData(): any {
-  //   return this.$store.getters.getPokeData;
-  // }
+  nextPage() {
+    console.log("next");
+  }
+
+  prevPage() {
+    console.log("prev");
+  }
 
   async paginate(): Promise<void> {
-    this.listOfImgsToDisplay = await this.generatePokemonCard(
-      this.startingIndex,
-      this.endingIndex
-    );
-
-    console.log(this.listOfImgsToDisplay);
+    console.log("test");
+    if (this.isUsingSearchPagination) {
+      this.listOfImgsToDisplay = this.searchBatch;
+    } else {
+      this.listOfImgsToDisplay = await this.generatePokemonCards(
+        this.startingIndex,
+        this.endingIndex
+      );
+    }
   }
 
   async mounted(): Promise<void> {
-    this.listOfImgsToDisplay = await this.generatePokemonCard(
+    this.listOfImgsToDisplay = await this.generatePokemonCards(
       this.startingIndex,
       this.endingIndex
     );
-    console.log(this.listOfImgsToDisplay);
   }
 
-  async generatePokemonCard(
+  /**
+   * Create pokemon cards to render
+   * @param start the starting id for the pokemon to iterate to the end
+   * @param end the last pokemon id
+   * @returns a Promise of an object that contains the id, url and pokemon object of the pokemon
+   */
+  async generatePokemonCards(
     start: number,
     end: number
   ): Promise<{ id: number; url: string; pokemon: unknown }[]> {
@@ -138,24 +174,39 @@ export default class LandingPage extends Vue {
     return arrayOfUrls;
   }
 
+  /**
+   * Load the details page for the Pokemon selected
+   * @returns void
+   */
   showDetailPokemon(item: unknown): void {
+    console.log(item);
     this.selectedPokemon = item;
     this.pokemonModal = true;
     console.log(item);
   }
 
+  /**
+   * Calculate the number of pages needed for pagination for the list of pokemons
+   * @returns a number that represents the total number of pages to paginate the list of pokemons
+   */
   get pageNumbers(): number {
     let numberOfPokemons = Math.ceil(this.numberOfPokemonInTotalCurrently / 15);
-    console.log(numberOfPokemons);
     return numberOfPokemons;
   }
 
+  /**
+   * Compute the starting index of the list of Pokemons for pagination
+   */
   get startingIndex(): number {
-    return 15 * (this.currentPage - 1) + 1;
+    return this.pokemonPerPage * (this.currentPage - 1) + 1;
   }
 
+  /**
+   * Computed the last index of the list of pokemons for pagination
+   * @returns the index of the last pokemon
+   */
   get endingIndex(): number {
-    return this.currentPage * 15;
+    return this.currentPage * this.pokemonPerPage;
   }
 }
 </script>
@@ -180,6 +231,7 @@ export default class LandingPage extends Vue {
 }
 
 .pokemonCard {
-  max-width: 256px;
+  max-width: 300px;
+  margin: auto;
 }
 </style>

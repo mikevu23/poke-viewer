@@ -1,10 +1,11 @@
 /**
  * Poke API service
  *
- * Handles calling API to POKE APIs
+ * Handles calling and caching API from POKE APIs
  */
 
-import axios from "axios";
+import {RETRIEVAL_AMOUNT_FOR_SEARCH} from "@/helper/constants"
+
 export class PokeApiHandler {
   API_URL_POKE = process.env.VUE_APP_POKE;
   API_URL_POKE_IMG = process.env.VUE_APP_POKE_IMG;
@@ -44,6 +45,7 @@ export class PokeApiHandler {
 
     response = await pokeCache.match(url);
     response = await response?.json();
+
     return response;
 
 
@@ -97,7 +99,7 @@ async initCache(){
       
       if (response === undefined){
         console.log(response)
-        await cachePoke.add(`${this.API_URL_POKE}/pokemon/${i}/`);
+        cachePoke.add(`${this.API_URL_POKE}/pokemon/${i}/`);
       }
     }
 }
@@ -106,12 +108,12 @@ async search(name: string){
   const cachePoke = await caches.open('pokeSearch');
   const response = await cachePoke.match(`${this.API_URL_POKE}pokemon?limit=893`);
   if (response === undefined){
-    await cachePoke.add(`${this.API_URL_POKE}pokemon?limit=893`);
+    cachePoke.add(`${this.API_URL_POKE}pokemon?limit=893`);
   }
 
   const searchDB = await response?.json();
-  const arrayofURL = searchDB.results.filter((pokemon: any) => pokemon.name.match(name));
-  // arrayofURL = arrayofURL.slice(0, 14);
+  let arrayofURL = searchDB.results.filter((pokemon: any) => pokemon.name.match(name));
+  arrayofURL = arrayofURL.slice(0, RETRIEVAL_AMOUNT_FOR_SEARCH);
   
   let pokemons: any = [];
   const promises = [];
@@ -127,8 +129,6 @@ async search(name: string){
 }
   
 }
-
-
 
 // public async searchForPokemon(name: string): Promise<unknown>{
 
