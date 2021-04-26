@@ -75,12 +75,12 @@ export class PokeApiHandler {
     const cachePoke = await caches.open("poke");
     for (let i = 1; i < POKEMON_PER_PAGE - 1; i++) {
       const response = await cachePoke.match(
-        `${this.API_URL_POKE}/pokemon/${i}/`
+        `${this.API_URL_POKE}pokemon/${i}/`
       );
 
       if (response === undefined) {
         console.log(response);
-        await cachePoke.add(`${this.API_URL_POKE}/pokemon/${i}/`);
+        await cachePoke.add(`${this.API_URL_POKE}pokemon/${i}/`);
       }
     }
   }
