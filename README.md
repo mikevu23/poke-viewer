@@ -5,7 +5,7 @@ PokeViewer is a web application that allows users to view all the current existi
 Currently it has pagination and searching for navigation.
 
 # Tech Stack
-Vue.js, Vuetify, Typescrip and Cache API.
+Vue.js, Vuetify, Typescript and Cache API.
 
 # Notes
 
